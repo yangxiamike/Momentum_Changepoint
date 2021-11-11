@@ -3,6 +3,7 @@ import os
 CPD_LBWS = [10, 21, 63, 126, 256]
 CPD_DEFAULT_LBW = 63
 USE_KM_HYP_TO_INITIALISE_KC = True
+RAW_DATA_FOLDER = 'data/raw_data/futures'
 CPD_INPUT_FOLER_DEFAULT = 'data/prod_data'
 CPD_OUTPUT_FOLDER_DEFAULT = f"data/cpd_data/stocks_cpd_{CPD_DEFAULT_LBW}lbw"
 

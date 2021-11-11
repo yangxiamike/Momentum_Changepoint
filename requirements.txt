@@ -1,0 +1,10 @@
+keras==2.6.0
+python==3.8.0
+tensorflow==2.6.1
+numpy==1.19.5
+gpflow
+ipykernel
+matplotlib
+pandas
+pytorch
+pyfolio

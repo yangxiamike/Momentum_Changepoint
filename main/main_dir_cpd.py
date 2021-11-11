@@ -24,11 +24,14 @@ for ticker, file in zip(tickers, file_tickers):
     data_input_path = os.path.join(CPD_INPUT_FOLER_DEFAULT, file)
     data_score_path = os.path.join(cpd_score_file_path, file)
     data_detect_path = os.path.join(cpd_detect_file_path, file)
-    all_processes.append(f'python main/main_single_cpd.py {data_input_path} {data_score_path} {data_detect_path} {START_DATE} {END_DATE} {CPD_DEFAULT_LBW} &')
+    all_processes.append(f'python main/main_single_cpd.py {data_input_path} {data_score_path} {data_detect_path} {START_DATE} {END_DATE} {CPD_DEFAULT_LBW}')
 
 if __name__ == '__main__':
-    process_pool = multiprocessing.Pool(processes=min(N_WORKERS, 4))
-    process_pool.map(os.system, all_processes)
+    num_proces = len(all_processes)
+    for i in range(0, num_proces, 2):
+        procs = all_processes[i : i+2]
+        process_pool = multiprocessing.Pool(processes=2)
+        process_pool.map(os.system, procs)
 
     # from main_single_cpd import main
     # from settings.default import CPD_DEFAULT_LBW

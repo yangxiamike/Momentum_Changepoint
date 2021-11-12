@@ -9,6 +9,7 @@ import tensorflow as tf
 from gpflow.kernels import ChangePoints, Matern32
 from sklearn.preprocessing import StandardScaler
 from settings.default import CPD_THRESHOLD
+from tqdm import tqdm
 from tensorflow_probability import bijectors as tfb
 
 Kernel = gpflow.kernels.base.Kernel
@@ -358,9 +359,9 @@ def run_module(
     # record CPD records
     cpd_result = []
 
-    time_series_data["date"] = time_series_data.index
-    time_series_data = time_series_data.reset_index(drop=True)
-    for window_end in range(lookback_window_length + 1, len(time_series_data)):
+    windows = list(range(lookback_window_length + 1, len(time_series_data)))
+    num_windows = len(windows)
+    for window_end in tqdm(windows, total = num_windows):
         ts_data_window = time_series_data.iloc[
             window_end - (lookback_window_length + 1) : window_end
         ][["date", "daily_returns"]].copy()

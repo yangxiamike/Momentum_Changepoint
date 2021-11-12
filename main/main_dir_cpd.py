@@ -10,7 +10,6 @@ from settings.default import CPD_DEFAULT_LBW
 file_tickers = os.listdir(CPD_INPUT_FOLER_DEFAULT)
 file_tickers = [file for file in file_tickers if '.csv' in file]
 tickers = [os.path.basename(file).split('.')[0] for file in file_tickers]
-N_WORKERS = min(len(tickers), 8)
 
 cpd_score_file_path = f"{CPD_OUTPUT_FOLDER_DEFAULT}/cpd_score"
 cpd_detect_file_path = f"{CPD_OUTPUT_FOLDER_DEFAULT}/cpd_detect"
@@ -28,9 +27,10 @@ for ticker, file in zip(tickers, file_tickers):
 
 if __name__ == '__main__':
     num_proces = len(all_processes)
-    for i in range(0, num_proces, 2):
-        procs = all_processes[i : i+2]
-        process_pool = multiprocessing.Pool(processes=2)
+    N_workers = 16
+    for i in range(0, num_proces, N_workers):
+        procs = all_processes[i : i+N_workers]
+        process_pool = multiprocessing.Pool(processes=N_workers)
         process_pool.map(os.system, procs)
 
     # from main_single_cpd import main

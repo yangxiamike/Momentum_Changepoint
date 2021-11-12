@@ -1,5 +1,5 @@
 import numpy as np
-from numpy.core.defchararray import index
+from numpy.core.defchararray import count, index
 import torch
 from torch import nn
 from torch.utils import data
@@ -28,23 +28,22 @@ def run_year(datasets: List[pd.DataFrame], year_range: str = '1995to2000'):
     save_dir = os.path.join(config.model_save_path, year_range)
     if not os.path.exists(save_dir):
         os.makedirs(save_dir)
-
     model = config.model_use
-    if config.load_model:
+    if config.is_load_model:
         model.load_state_dict(os.path.join(save_dir, config.model_load_name))
     
     train_loader, valid_loader = get_train_loader(datasets, train_ratio = config.train_ratio)
     optimizer = torch.optim.Adam(model.parameters(), lr = config.lr, weight_decay = config.weight_decay)
 
     best_loss = np.inf
+    count_valid_stuck = 0    # count for validataion loss for early stopping
 
     for epoch in range(config.num_epochs):
         epoch += 1
-
         train(model, config.loss_criterion, train_loader, valid_loader, optimizer, epoch, writer)
         valid_loss = evaluate(model, config.loss_criterion, valid_loader)
 
-        print('Epoch {}  Validation Loss: {:3.2f}\t'.format(epoch, valid_loss))
+        print('Epoch {}  Validation Loss: {:3.6f}\t'.format(epoch, valid_loss))
 
         file_name = f'Epoch{str(epoch)}Loss{str(round(valid_loss, 3))}'.replace('.', '_') + '.pt'
         file_path = os.path.join(save_dir, file_name)
@@ -53,12 +52,21 @@ def run_year(datasets: List[pd.DataFrame], year_range: str = '1995to2000'):
         torch.save(model.state_dict(), file_path)
         if best_loss > valid_loss:
             best_loss = valid_loss
+            count_valid_stuck = 0
             torch.save(model.state_dict(), best_path)
-        writer.add_scalar('Total Negative Valid loss', -valid_loss, epoch)
+        else:
+            count_valid_stuck += 1
+        writer.add_scalar('Total Negative Valid loss', valid_loss, epoch)
+
+        # Add early stopping
+        if count_valid_stuck > config.early_stop_epochs:
+            print('Early Stopping Triggered.')
+            break
 
 def run_train():
     # load data features
-    data_features = pd.read_csv(config.features_path, index = False, parse_dates = True)
+    data_features = pd.read_csv(config.features_path, parse_dates = True)
+    data_features.date = pd.to_datetime(data_features.date)
     # create windowed subset of the data
     date_start = datetime(config.bt_start_year, 1, 1)
     date_end = datetime(config.bt_start_year + 5, 1, 1)
@@ -77,7 +85,7 @@ def run_test():
     dataloader_test, index_test = get_test_loader(test_sets)
 
     model = config.model_use()
-    model.load_state_dict(os.path.join(config.model_save_path, config.model_best_save))
+    model.load_state(os.path.join(config.model_save_path, config.model_best_save))
 
     signals, ys = inference(model, dataloader_test)
     loss_criterion = config.loss_criterion
@@ -92,4 +100,6 @@ def run_test():
     df = pd.DataFrame(data = data, columns = ['signal', 'ret', 'sigma'], index = index_test)
     df.to_csv(os.path.join(config.model_save_path, 'run_time.csv'))
 
-    
+
+if __name__ == '__main__':
+    run_train()

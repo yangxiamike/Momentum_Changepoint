@@ -67,7 +67,7 @@ class BaseStrat(metaclass=ABCMeta):
     def calc_normalised_returns(price, daily_vol, day_offset):
         return (
             BaseStrat.calc_returns(price, day_offset)
-            / daily_vol
+            / daily_vol.values
             / np.sqrt(day_offset)
         )
     

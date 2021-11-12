@@ -1,5 +1,5 @@
 from pandas.core.frame import DataFrame
-from finance_data.base_data import FinanceData
+from finance_data.base_data import BaseData
 from moment_strategy.base_strat import BaseStrat
 from moment_strategy.macd_strat import MACDStrat
 import numpy as np
@@ -13,16 +13,15 @@ VOL_THRESHOLD = 5
 TREND_COMBINATIONS = [(8, 24), (16, 48), (32, 96)]
 
 
-class DMNData(FinanceData):
+class DMNData(BaseData):
 
     def make_all_features(self, df_assets: pd.DataFrame) -> pd.DataFrame:
+        """
+        df_assets: [date, price, ticker]
+        """
         df_features = []
-        asset_names = self.get_asset_list()
-        for asset in asset_names:
-            df_asset = pd.DataFrame(df_assets[asset])
-            df_asset.columns = ['price']
+        for asset, df_asset in df_assets.groupby('ticker'):
             df_feature = self.make_single_features(df_asset)
-            df_feature.assign(ticker = asset)
             df_features.append(df_feature)
 
         df_features = pd.concat(df_features)
@@ -139,7 +138,7 @@ class DMNData(FinanceData):
         ).shift(-1)
 
         price = pd.DataFrame(df_asset['price'])
-        daily_vol = df_asset['daily_vol']
+        daily_vol = df_asset[['daily_vol']]
         df_asset["norm_daily_return"] = BaseStrat.calc_normalised_returns(price, daily_vol, 1)
         df_asset["norm_monthly_return"] = BaseStrat.calc_normalised_returns(price, daily_vol, 21)
         df_asset["norm_quarterly_return"] = BaseStrat.calc_normalised_returns(price, daily_vol, 63)
@@ -153,13 +152,18 @@ class DMNData(FinanceData):
             df_asset[col_name] = macd_strat.cal_single_signal(short_window, long_window)
         
         # date features
-        df_asset["day_of_week"] = df_asset.index.isocalendar().day
-        df_asset["day_of_month"] = df_asset.index.map(lambda d: d.day)
-        df_asset["week_of_year"] = df_asset.index.isocalendar().week
-        df_asset["month_of_year"] = df_asset.index.map(lambda d: d.month)
-        df_asset["year"] = df_asset.index.isocalendar().year
-        df_asset["date"] = df_asset.index  # duplication but sometimes makes life easier
+        # df_asset["day_of_week"] = df_asset.index.isocalendar().day
+        # df_asset["day_of_month"] = df_asset.index.map(lambda d: d.day)
+        # df_asset["week_of_year"] = df_asset.index.isocalendar().week
+        # df_asset["month_of_year"] = df_asset.index.map(lambda d: d.month)
+        # df_asset["year"] = df_asset.index.isocalendar().year
+        # df_asset["date"] = df_asset.index  # duplication but sometimes makes life easier
+        columns = ['daily_returns', 'norm_daily_return', 'norm_monthly_return',
+       'norm_quarterly_return', 'norm_biannual_return', 'norm_annual_return',
+       'macd_8_24', 'macd_16_48', 'macd_32_96', 
+       'target_returns', 'daily_vol', 'date', 'ticker']
 
+        df_asset = df_asset[columns]
         return df_asset.dropna()
     
     

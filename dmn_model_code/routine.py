@@ -20,7 +20,7 @@ def train(model, model_loss, train_loader, valid_loader, optimizer, epoch, tb_wr
 
     total_loss = []
     
-    for idx, (x, y) in enumerate(train_loader):
+    for idx, (x, y) in tqdm(enumerate(train_loader), total = len(train_loader)):
         # with torch.autograd.set_detect_anomaly(True):
         # x -> BxTxH, y -> BxTxh
         # todo: change dim to TxBxH
@@ -30,6 +30,8 @@ def train(model, model_loss, train_loader, valid_loader, optimizer, epoch, tb_wr
         predictions = model(x)
 
         loss_criterion = model_loss()
+        loss_criterion.train()
+        loss_criterion.to(config.device)
 
         loss = loss_criterion(predictions, y)
         loss.backward()
@@ -39,18 +41,20 @@ def train(model, model_loss, train_loader, valid_loader, optimizer, epoch, tb_wr
         optimizer.step()
         optimizer.zero_grad()
 
+
         idx += 1
         if idx % config.log_interval == 0:
             avg_loss = np.mean(total_loss)
-            print('Epoch {} Training Loss: {:3.2f}'.format(epoch, np.exp(avg_loss)))
+            print('Epoch {} Training Loss: {:3.6f}'.format(epoch, avg_loss))
             global_step = epoch * config.batch_size + idx 
-            writer.add_scalar('Training Loss', avg_loss, global_step)
             total_loss = []
+            global_step = epoch * config.batch_size + idx 
+            writer.add_scalar('Training Loss', -avg_loss, global_step)
         
         if idx % config.eval_interval == 0:
             loss = evaluate(model, model_loss, valid_loader)
             writer.add_scalar('Validation Loss', loss, global_step)
-            print('Validation loss:{:3.2f}'.format(loss))
+            print('Validation loss:{:3.6f}'.format(loss))
 
 def evaluate(model, model_loss, data_loader):
     model.eval()

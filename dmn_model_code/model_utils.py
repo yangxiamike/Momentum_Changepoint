@@ -14,8 +14,7 @@ def split_by_date(df, date_breakpoints):
 def split_by_category(df, start_date, end_date):
     train_sets = []
     test_sets = []
-
-    df.set_index(['asset', 'date'], inplace = True, drop = False)
+    df.set_index(['ticker', 'date'], inplace = True, drop = False)
     df.sort_index(inplace = True)
 
     for asset, df_piece in df.groupby(level = 0):
@@ -23,6 +22,9 @@ def split_by_category(df, start_date, end_date):
         test_data = df_piece[(df_piece['date'] >= start_date) & (df_piece['date'] < end_date)]
         train_data.dropna(inplace = True)
         test_data.dropna(inplace = True)
+        
+        train_data.drop(['ticker', 'date'], inplace = True, axis = 1)
+        test_data.drop(['ticker', 'date'], inplace = True, axis = 1)
 
         train_sets.append(train_data)
         test_sets.append(test_data)

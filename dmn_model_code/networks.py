@@ -1,6 +1,7 @@
 from tokenize import Decnumber
 import numpy as np
 import torch
+from math import sqrt
 from torch import nn
 
 
@@ -12,7 +13,7 @@ class DMNLstm(nn.Module):
         """
         super(DMNLstm, self).__init__()
         self.linear = nn.Linear(in_dim, hid_dim)
-        self.bn = nn.BatchNorm1d(self.hid_dim)
+        self.bn = nn.BatchNorm1d(hid_dim)
         self.tanh_linear = nn.Tanh()
         self.lstm = nn.LSTM(input_size = hid_dim, hidden_size = hid_dim, 
                             num_layers = num_lstm_layer, batch_first = False,
@@ -23,10 +24,10 @@ class DMNLstm(nn.Module):
     def forward(self, x, is_online = False):
         B, T, H = x.shape
 
-
-        x = x.permute((1, 2, 0)).contiguous() # TxBxH -> BxHxT
-        x = self.linear(x)
-        x = self.tanh_linear(x)
+        # x = x.permute((0, 2, 1)).contiguous() # BxTxH -> BxHxT
+        x = self.linear(x) 
+        x = self.tanh_linear(x)   # B x T x H
+        x = x.permute((0, 2, 1)).contiguous()  # BxTxH -> BxHxT
         x = self.bn(x)
         x = x.permute((2, 0, 1)).contiguous() # BxHxT -> TxBxH
         out, (h, c) = self.lstm(x)
@@ -36,13 +37,12 @@ class DMNLstm(nn.Module):
             x = out[-1]              # BxH
         else:
             x = out
-            x = x.permute((1, 2, 0)) # TxBxH -> BxHxT
+            # x = x.permute((1, 2, 0)) # TxBxH -> BxHxT
+            x = x.permute((1, 0, 2)).contiguous() # TxBxH -> BxTxH
         # Time distributed layer
         x = self.linear_out(x)
-        x = self.tanh_out(x)
+        x = self.tanh_out(x)    
 
-        if not is_online:
-            x = x.permute((2, 0, 1)).contiguous() # BxHxT -> TxBxH
         return x
 
 class LossSharpe(nn.Module):
@@ -56,11 +56,10 @@ class LossSharpe(nn.Module):
         """
         Attension!! ys shape is [return, sigma]
         """
-        ret = ys[:, 0]
-        sigma = ys[:, 1]
+        ret = ys[:, :, 0]
+        signals = signals[:, :, 0]
         R = signals * ret
         R_expect = torch.mean(R)
         R_std = torch.std(R)
-        scale = torch.tensor(252)
-        sharpe = -torch.sqrt(scale) * R_expect / R_std
+        sharpe = sqrt(252) * R_expect / R_std
         return sharpe

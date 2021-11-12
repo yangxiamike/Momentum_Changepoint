@@ -12,7 +12,7 @@ import pandas as pd
 from typing import Tuple
 from typing import List
 
-def combine_seq(x: pd.DataFrame, y: pd.DataFrame, window_size: int) -> Tuple:
+def combine_seq(x: np.array, y: np.array, window_size: int) -> Tuple:
     """
     Split financial data x and y based on window_size for RNN training
     Non-overlapping version
@@ -23,20 +23,25 @@ def combine_seq(x: pd.DataFrame, y: pd.DataFrame, window_size: int) -> Tuple:
     N, H = x.shape
     _, H_y = y.shape
     new_N = N // window_size * window_size
-    x = x[:new_N]
-    y = y[:new_N]
+    x = sliding_window_view(x, window_shape = (config.seq_length, H)) # TxH -> Nx1xLxH
+    x = x[:,0]                                              # Nx1xLxH -> NxLxH
+    y = sliding_window_view(y, window_shape = (config.seq_length, H_y)) # TxH -> Nx1xLxH
+    y = y[:,0]                                              # Nx1xLxH -> NxLxH
+    # x = x[-new_N:]
+    # y = y[-new_N:]
     # x -> window_size samples y -> window_size+1 index
     # BxTxH
-    x = x.reshape((-1, window_size, H))
-    y = y.reshape((-1, window_size, H_y))
+    # x = x.reshape((-1, window_size, H))
+    # y = y.reshape((-1, window_size, H_y))
+    
     return x, y
 
 def make_train_data(datas: List[Tuple[np.array]]) -> Tuple:
     X, Y = [], []
     for x, y in datas:
         x, y = combine_seq(x, y, config.seq_length)
-        X = X.append(x)
-        Y = Y.append(y)
+        X.append(x)
+        Y.append(y)
     X = np.concatenate(X, axis = 0)
     Y = np.concatenate(Y, axis = 0)
     return X, Y
@@ -62,7 +67,7 @@ def split_train_valid(datasets: List[pd.DataFrame], train_ratio):
     y_dim = config.num_y_dim
 
     dataset_train = [(data.values[:N, :-y_dim], data.values[:N, -y_dim:]) for (data, N) in zip(datasets, N_trains)]
-    dataset_valid = [(data.valuesN[:, :-y_dim], data.values[N:, -y_dim:]) for (data, N) in zip(datasets, N_trains)]
+    dataset_valid = [(data.values[N:, :-y_dim], data.values[N:, -y_dim:]) for (data, N) in zip(datasets, N_trains)]
 
     X_train, y_train = make_train_data(dataset_train)
     X_valid, y_valid = make_train_data(dataset_valid)
@@ -96,7 +101,7 @@ class DMN_Dataset(Dataset):
         return self.alphas.shape[0]
     
     def __getitem__(self, idx):
-        return torch.from_numpy(self.alphs[idx]).float(), torch.from_numpy(self.future_info[idx]).float()
+        return torch.from_numpy(self.alphas[idx]).float(), torch.from_numpy(self.future_info[idx]).float()
 
 def get_train_loader(datasets, train_ratio = 0.7):
 

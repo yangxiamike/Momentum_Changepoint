@@ -358,6 +358,8 @@ def run_module(
     
     # record CPD records
     cpd_result = []
+    time_series_data["date"] = time_series_data.index
+    time_series_data = time_series_data.reset_index(drop=True)
 
     windows = list(range(lookback_window_length + 1, len(time_series_data)))
     num_windows = len(windows)

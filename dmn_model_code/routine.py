@@ -81,17 +81,16 @@ def evaluate(model, model_loss, data_loader):
 def inference(model, dataloader):
     model.eval()
     model.to(config.device)
-
     signals = []
     ys = []
-    for x, y in enumerate(dataloader):
+    for x, y in dataloader:
         x = x.to(config.device)
         y = y.to(config.device)
-        preds = model(x)
+        preds = model(x, is_online = True)
         signals.append(preds)
         ys.append(y)
     signals = torch.cat(signals)
-    ys = torch.cat(signals)
+    ys = torch.cat(ys)
 
     return signals, ys
 

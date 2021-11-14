@@ -1,4 +1,5 @@
 import numpy as np
+from sklearn.preprocessing import StandardScaler
 
 def split_by_date(df, date_breakpoints):
 
@@ -25,6 +26,10 @@ def split_by_category(df, start_date, end_date):
         
         train_data.drop(['ticker', 'date'], inplace = True, axis = 1)
         test_data.drop(['ticker', 'date'], inplace = True, axis = 1)
+
+        scaler = StandardScaler()
+        train_data.iloc[:, :-2] = scaler.fit_transform(train_data.iloc[:, :-2])
+        test_data.iloc[:, :-2] = scaler.transform(test_data.iloc[:, :-2])
 
         train_sets.append(train_data)
         test_sets.append(test_data)

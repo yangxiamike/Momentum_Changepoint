@@ -1,4 +1,5 @@
 from tokenize import Decnumber
+from typing import ForwardRef
 import numpy as np
 import torch
 from math import sqrt
@@ -63,3 +64,14 @@ class LossSharpe(nn.Module):
         R_std = torch.std(R)
         sharpe = sqrt(252) * R_expect / R_std
         return sharpe
+
+class LossReturn(nn.Module):
+    def __init__(self) -> None:
+        super().__init__()
+    
+    def forward(self, signals: torch.tensor, ys: torch.tensor) -> torch.tensor:
+        ret = ys[:, :, 0]
+        signals = signals[:, :, 0]
+        R = signals * ret
+        R_expect = torch.mean(R)
+        return -R_expect * 252

@@ -76,7 +76,8 @@ def run_train():
 
 def run_test():
     # load data features
-    data_features = pd.read_csv(config.features_path, index = False, parse_dates = True)
+    data_features = pd.read_csv(config.features_path, parse_dates = True)
+    data_features['date'] = pd.to_datetime(data_features['date'])
     # create windowed subset of the data
     date_start = datetime(config.bt_start_year, 1, 1)
     date_end = datetime(config.bt_start_year + 5, 1, 1)
@@ -84,22 +85,31 @@ def run_test():
     _, test_sets = split_by_category(data_features, date_start, date_end)
     dataloader_test, index_test = get_test_loader(test_sets)
 
-    model = config.model_use()
-    model.load_state(os.path.join(config.model_save_path, config.model_best_save))
+    model = config.model_use
+    model.load_state_dict(torch.load(os.path.join(config.model_load_path, config.model_best_save)))
 
     signals, ys = inference(model, dataloader_test)
-    loss_criterion = config.loss_criterion
-    loss = loss_criterion(signals, ys)
-    loss = loss.item()
 
-    print(f'Sharpe ratio during {date_start} to {date_end} is {loss}')
+    # Calculate Sharpe Loss
+    ret = ys[:, 0]
+    signals = signals[:, 0]
+    R = signals * ret
+    R_expect = torch.mean(R)
+    R_std = torch.std(R)
+    sharpe = np.sqrt(252) * R_expect / R_std
+    sharpe = sharpe.detach().cpu().numpy()
+
+    print(f'Sharpe ratio during {date_start} to {date_end} is {sharpe}')
 
     data = torch.cat([signals, ys], axis = 1)
-    data = torch.detach().numpy()
+    data = data.detach().cpu().numpy()
 
     df = pd.DataFrame(data = data, columns = ['signal', 'ret', 'sigma'], index = index_test)
     df.to_csv(os.path.join(config.model_save_path, 'run_time.csv'))
+    daily_ret = df['ret'] * df['signal']
+    daily_ret = daily_ret.groupby('date').mean()
+    daily_ret.to_csv(os.path.join(config.model_save_path, 'run_time_ret.csv'))
 
 
 if __name__ == '__main__':
-    run_train()
+    run_test()

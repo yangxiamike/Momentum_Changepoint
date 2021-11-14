@@ -23,16 +23,16 @@ def combine_seq(x: np.array, y: np.array, window_size: int) -> Tuple:
     N, H = x.shape
     _, H_y = y.shape
     new_N = N // window_size * window_size
-    x = sliding_window_view(x, window_shape = (config.seq_length, H)) # TxH -> Nx1xLxH
-    x = x[:,0]                                              # Nx1xLxH -> NxLxH
-    y = sliding_window_view(y, window_shape = (config.seq_length, H_y)) # TxH -> Nx1xLxH
-    y = y[:,0]                                              # Nx1xLxH -> NxLxH
-    # x = x[-new_N:]
-    # y = y[-new_N:]
+    # x = sliding_window_view(x, window_shape = (config.seq_length, H)) # TxH -> Nx1xLxH
+    # x = x[:,0]                                              # Nx1xLxH -> NxLxH
+    # y = sliding_window_view(y, window_shape = (config.seq_length, H_y)) # TxH -> Nx1xLxH
+    # y = y[:,0]                                              # Nx1xLxH -> NxLxH
+    x = x[-new_N:]
+    y = y[-new_N:]
     # x -> window_size samples y -> window_size+1 index
     # BxTxH
-    # x = x.reshape((-1, window_size, H))
-    # y = y.reshape((-1, window_size, H_y))
+    x = x.reshape((-1, window_size, H))
+    y = y.reshape((-1, window_size, H_y))
     
     return x, y
 
@@ -55,8 +55,8 @@ def make_test_data(datas: List[Tuple[np.array]]) -> Tuple:
         x = x[:,0]                                              # Nx1xLxH -> NxLxH
         y = y[seq_len-1:]                                       # Nxh
 
-        X = X.append(x)
-        Y = Y.append(y)
+        X.append(x)
+        Y.append(y)
     X = np.concatenate(X, axis = 0)
     Y = np.concatenate(Y, axis = 0)
     return X, Y
@@ -125,7 +125,7 @@ def get_test_loader(datasets):
 
     index_total = None
     for index in indexs:
-        if index_total == None:
+        if index_total is None:
             index_total = index
         else:
             index_total = index_total.append(index)

@@ -1,7 +1,7 @@
 from torch import nn
 import os
 import torch
-from networks import DMNLstm
+from networks import DMNLstm, LossReturn
 from networks import LossSharpe
 
 # dataset path
@@ -25,7 +25,7 @@ early_stop_epochs = 25
 seq_length = 63     # sequence length for LSTM input
 in_dim = 9
 out_dim = 1
-hid_dim = 64
+hid_dim = 10
 num_lstm_layer = 2
 is_dropout = True
 lstm_dropout = 0.15
@@ -33,7 +33,7 @@ lstm_dropout = 0.15
 model_use = DMNLstm(in_dim, out_dim, hid_dim, num_lstm_layer, lstm_dropout)
 
 # optimization
-loss_criterion = LossSharpe
+loss_criterion = LossReturn
 lr = 0.0001
 weight_decay = 0.0
 
@@ -42,6 +42,7 @@ is_load_model = False
 model_load_name = 'best_save.pt'
 model_best_save = 'best_save.pt'
 model_save_path = 'model'
+model_load_path = 'model/2020to2025/2020to2025'
 tensorboard_path = 'tb_log/'
 
 # select parameter

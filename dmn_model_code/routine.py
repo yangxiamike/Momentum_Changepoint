@@ -84,14 +84,14 @@ def inference(model, dataloader):
 
     signals = []
     ys = []
-    for x, y in enumerate(dataloader):
+    for x, y in dataloader:
         x = x.to(config.device)
         y = y.to(config.device)
         preds = model(x)
         signals.append(preds)
         ys.append(y)
     signals = torch.cat(signals)
-    ys = torch.cat(signals)
+    ys = torch.cat(ys)
 
     return signals, ys
 
